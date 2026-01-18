@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HomeGo Estate - 雲端中控</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* === 智慧財產防護盾 (修正版) === */
+        /* 預設禁止選取 */
+        body { 
+            user-select: none; 
+            -webkit-user-select: none; 
+        }
+        
+        /* 允許輸入框和連結互動 */
+        input, button, a { 
+            user-select: text; 
+            -webkit-user-select: text; 
+            -webkit-touch-callout: none; /* iOS 長按不跳出選單，直接點擊 */
+        }
+
+        :root {
+            --bg-main: #0f172a; --bg-secondary: #1e293b;
+            --text-primary: #f1f5f9; --text-secondary: #94a3b8;
+            --accent: #06b6d4;
+            --glass: rgba(30, 41, 59, 0.85);
+            --border: 1px solid rgba(255,255,255,0.1);
+        }
+        body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; background: var(--bg-main); color: var(--text-primary); height: 100vh; overflow: hidden; }
+
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; margin-top: 15px; transition:0.2s; }
+        .btn-primary { background: linear-gradient(135deg, #3b82f6, #06b6d4); }
+        .btn-secondary { background: var(--bg-secondary); border: var(--border); color: var(--text-secondary); }
+        .btn-danger { background: #ef4444; }
+        .input-box { width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: var(--border); border-radius: 8px; color: white; margin-top: 5px; box-sizing: border-box; }
+        .input-group { margin: 15px 0; text-align: left; }
+
+        .auth-container { position: fixed; top:0; left:0; width:100%; height:100%; background: radial-gradient(circle, #1e293b, #0f172a); display:flex; justify-content:center; align-items:center; z-index: 10000; }
+        .auth-box { background: var(--glass); backdrop-filter: blur(10px); padding: 30px; border-radius: 16px; border: var(--border); width: 90%; max-width: 400px; text-align: center; }
+        
+        #dashboard-section { display: none; height: 100vh; flex-direction: column; }
+        
+        .top-header { 
+            height: 60px; background: var(--glass); border-bottom: var(--border); 
+            display: flex; align-items: center; padding: 0 15px; 
+            position: relative; z-index: 2000;
+        }
+        
+        /* === 新聞跑馬燈與連結樣式 (關鍵 CSS) === */
+        #news-ticker-bar { 
+            flex: 1; overflow: hidden; white-space: nowrap; 
+            display: flex; align-items: center; 
+            margin-left: 15px;
+            position: relative; 
+            z-index: 5000; /* 確保在最上層 */
+        }
+        #news-content { 
+            display: inline-block; padding-left: 100%; 
+        }
+        
+        /* 連結專用樣式 - 萬能鑰匙 */
+        .news-link {
+            color: #06b6d4; 
+            text-decoration: none; 
+            margin-right: 50px; 
+            font-weight: bold; 
+            cursor: pointer;
+            
+            /* 解鎖點擊 */
+            pointer-events: auto !important;
+            user-select: text !important;
+            -webkit-user-select: text !important;
+            touch-action: manipulation;
+            
+            /* 解決 iOS 渲染層級問題 */
+            position: relative;
+            z-index: 9999;
+            transform: translateZ(0);
+        }
+        .news-link:hover { color: #fff; text-shadow: 0 0 8px rgba(6,182,212,0.6); }
+        /* ======================================= */
+
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+
+        .dashboard-body { flex: 1; display: flex; overflow: hidden; position: relative; }
+        .sidebar { width: 250px; background: var(--bg-secondary); border-right: var(--border); display: flex; flex-direction: column; z-index: 1500; transition: 0.3s; }
+        .nav-links { list-style: none; padding: 0; margin: 0; flex: 1; overflow-y: auto; }
+        .nav-links a { display: block; padding: 15px; color: var(--text-secondary); text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .nav-links a.active { background: rgba(6, 182, 212, 0.1); color: var(--accent); border-left: 3px solid var(--accent); }
+        .user-info { padding: 20px; border-top: var(--border); background: rgba(0,0,0,0.2); }
+
+        .main-content { flex: 1; background: white; position: relative; }
+        iframe { width: 100%; height: 100%; border: none; }
+
+        .menu-btn { display: none; background:none; border:none; color:white; font-size:20px; }
+        .sidebar-overlay { display: none; position: fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,0.5); z-index: 1400; }
+        
+        @media (max-width: 768px) {
+            .menu-btn { display: block; }
+            .brand-text { display: none; }
+            .sidebar { position: absolute; height: 100%; left: -100%; }
+            .sidebar.active { left: 0; }
+            .sidebar-overlay.active { display: block; }
+        }
+
+        #admin-panel { display: none; padding: 20px; background: var(--bg-main); height: 100%; overflow-y: auto; }
+        .table-res { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 500px; margin-top:10px; }
+        td, th { padding: 10px; border: var(--border); text-align: left; }
+    </style>
+</head>
+<body>
+    <div id="loading-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg-main); z-index:20000; justify-content:center; align-items:center;">載入中...</div>
+
+    <div id="auth-section" class="auth-container">
+        <div id="login-form" class="auth-box">
+            <h2 style="color:var(--accent)">HomeGo Cloud</h2>
+            <input id="login-user" class="input-box" placeholder="帳號">
+            <input id="login-pass" type="password" class="input-box" placeholder="密碼">
+            <div style="margin:15px 0; text-align:left;"><input type="checkbox" id="keep-login"> 保持登入</div>
+            <button id="btnLogin" class="btn btn-primary">登入</button>
+            <div style="margin-top:20px; font-size:13px; color:#aaa; cursor:pointer;" onclick="showRegister()">註冊裝置</div>
+            <div style="margin-top:10px; font-size:12px; color:#555; cursor:pointer;" onclick="showAdminAuth()">Admin</div>
+        </div>
+        <div id="register-form" class="auth-box" style="display:none">
+            <h3>裝置綁定</h3>
+            <input id="reg-user" class="input-box" placeholder="帳號">
+            <input id="reg-pass" type="password" class="input-box" placeholder="密碼">
+            <input id="reg-code" type="number" class="input-box" placeholder="開通碼">
+            <button id="btnRegister" class="btn btn-primary">註冊</button>
+            <div style="margin-top:15px; cursor:pointer;" onclick="showLogin()">返回</div>
+        </div>
+        <div id="admin-auth-form" class="auth-box" style="display:none">
+            <h3>管理員</h3>
+            <input id="admin-pass-input" type="password" class="input-box" placeholder="密碼">
+            <button id="btnAdminLogin" class="btn btn-danger">進入</button>
+            <div style="margin-top:15px; cursor:pointer;" onclick="showLogin()">返回</div>
+        </div>
+    </div>
+
+    <div id="dashboard-section">
+        <header class="top-header">
+            <button class="menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+            <div style="font-weight:bold; margin-left:10px;" class="brand-text">HomeGo Estate</div>
+            <div id="news-ticker-bar">
+                <span style="color:var(--text-secondary); margin-right:10px; font-size:14px;"><i class="fas fa-bolt"></i> 快訊</span>
+                <div style="flex:1; overflow:hidden;">
+                    <span id="news-content">連線中...</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-body">
+            <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+            <nav class="sidebar" id="sidebar">
+                <ul class="nav-links">
+                    <li><a href="#" onclick="loadPage(0,this)" class="active"><i class="fas fa-user"></i> 員工管理</a></li>
+                    <li><a href="#" onclick="loadPage(1,this)"><i class="fas fa-file"></i> 案件管理</a></li>
+                    <li><a href="#" onclick="loadPage(2,this)"><i class="fas fa-chart-bar"></i> 土地效益</a></li>
+                    <li><a href="#" onclick="loadPage(3,this)"><i class="fas fa-receipt"></i> 收據系統</a></li>
+                    <li><a href="#" onclick="loadPage(4,this)"><i class="fas fa-calculator"></i> 報價系統</a></li>
+                    <li><a href="#" onclick="loadPage(5,this)"><i class="fas fa-robot"></i> AI 助手</a></li>
+                    <li><a href="#" onclick="loadPage(6,this)"><i class="fas fa-landmark"></i> 銀行優選</a></li>
+                    <li id="admin-link" style="display:none"><a href="#" onclick="showAdmin(this)" style="color:#ef4444">管理員後台</a></li>
+                </ul>
+                <div class="user-info">
+                    <div id="display-username" style="font-weight:bold; margin-bottom:5px;">User</div>
+                    <button class="btn btn-secondary" style="padding:5px 10px; margin:0; font-size:12px;" onclick="logout()">登出</button>
+                </div>
+            </nav>
+
+            <main class="main-content">
+                <iframe id="content-frame" src=""></iframe>
+                <div id="admin-panel">
+                    <h3>管理後台</h3>
+                    <div style="margin:20px 0; padding:15px; border:1px solid #333; border-radius:8px;">
+                        <h4>開通碼</h4>
+                        <input id="admin-generate-name" class="input-box" placeholder="帳號" style="max-width:200px">
+                        <button class="btn btn-primary" style="width:auto; margin-top:5px;" onclick="generateCode()">產生</button>
+                        <div id="generated-code-area" style="display:none; margin-top:10px; font-size:24px; color:var(--accent)">
+                            Code: <span id="display-code"></span>
+                        </div>
+                    </div>
+                    <h4>使用者列表</h4>
+                    <div class="table-res">
+                        <table id="user-table">
+                            <thead><tr><th>ID</th><th>裝置數</th><th>操作</th></tr></thead>
+                            <tbody id="user-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>if('serviceWorker'in navigator)window.onload=()=>navigator.serviceWorker.register('./service-worker.js');</script>
+    <script type="module" src="./main.js"></script>
+</body>
+</html>
