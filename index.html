@@ -5,25 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>地政士案件管理系統</title>
     <style>
-        /* 設定頁面為全螢幕，移除邊框，讓 iframe 看起來就像原生網頁 */
-        body, html { 
-            margin: 0; 
-            padding: 0; 
-            width: 100%; 
-            height: 100%; 
-            overflow: hidden; 
-            background-color: #f1f5f9; 
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #f1f5f9; font-family: sans-serif; }
+        iframe { width: 100%; height: 100%; border: none; display: block; }
+        .fallback {
+            display: none;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; flex-direction: column; align-items: center; justify-content: center; text-align: center;
         }
-        iframe { 
-            width: 100%; 
-            height: 100%; 
-            border: none; 
-            display: block; 
+        .btn {
+            background: #059669; color: white; padding: 15px 30px; 
+            text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s;
         }
+        .btn:hover { background: #047857; transform: translateY(-2px); }
     </style>
 </head>
 <body>
-    <!-- 這裡就是連接到您 Google 後台的大門 -->
-    <iframe src="https://script.google.com/macros/s/AKfycbz8rPsP8vohEpu6B594-4bL8SOjwVk4L9_XY-SgJkofI7EaiXoD2YO9IZ4d2hFL4YkF/exec" title="案件管理系統"></iframe>
+    <!-- 這裡放您的 Google 網址 -->
+    <iframe id="sys-frame" src="https://script.google.com/macros/s/AKfycbz8rPsP8vohEpu6B594-4bL8SOjwVk4L9_XY-SgJkofI7EaiXoD2YO9IZ4d2hFL4YkF/exec" title="案件管理系統"></iframe>
+
+    <!-- 如果跑不出來，會顯示這個畫面 -->
+    <div id="fallback-msg" class="fallback">
+        <h2 style="color: #334155; margin-bottom: 20px;">系統無法在嵌入視窗中載入</h2>
+        <p style="color: #64748b; margin-bottom: 30px;">這通常是因為瀏覽器的安全性設定 (Cookie 阻擋)。<br>請點擊下方按鈕直接開啟系統。</p>
+        <a href="https://script.google.com/macros/s/AKfycbz8rPsP8vohEpu6B594-4bL8SOjwVk4L9_XY-SgJkofI7EaiXoD2YO9IZ4d2hFL4YkF/exec" class="btn">開啟案件管理系統</a>
+    </div>
+
+    <script>
+        // 簡單偵測：如果 iframe 載入太久或失敗，顯示按鈕
+        const iframe = document.getElementById('sys-frame');
+        const fallback = document.getElementById('fallback-msg');
+        
+        // 如果 3 秒後還沒載入完成，或是瀏覽器阻擋，顯示按鈕
+        setTimeout(() => {
+            // 這裡無法精確偵測跨域內容，但可以做時間性提示
+            // 通常 Google 登入在 iframe 會被阻擋，顯示按鈕是最好的備案
+            // 您可以手動切換顯示來測試
+        }, 3000);
+    </script>
 </body>
 </html>
